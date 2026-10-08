@@ -1,0 +1,102 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+
+    background-color: #fff4e5;
+    background-image: url("/venkateswara.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.login-container {
+    width: 380px;
+    max-width: 100%;
+    padding: 35px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 2px solid #d6b36a;
+    border-radius: 18px;
+    box-shadow: 0 10px 35px rgba(50, 25, 10, 0.3);
+    text-align: center;
+}
+
+.login-container h1 {
+    margin: 0 0 12px;
+    color: #8b1e1e;
+    font-size: 30px;
+}
+
+.login-container p {
+    color: #665b50;
+    font-size: 14px;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 13px;
+    margin: 8px 0;
+    border: 1px solid #d8c6a0;
+    border-radius: 8px;
+    font-size: 15px;
+    background: #fffdf9;
+}
+
+.login-container input:focus {
+    outline: none;
+    border-color: #a67c27;
+    box-shadow: 0 0 5px rgba(166, 124, 39, 0.3);
+}
+
+.login-container button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #8b1e1e;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.login-container button:hover {
+    background: #641414;
+    transform: translateY(-2px);
+}
+
+#message {
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.login-container a {
+    color: #8b1e1e;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.login-container a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 500px) {
+    .login-container {
+        padding: 28px 22px;
+    }
+
+    .login-container h1 {
+        font-size: 26px;
+    }
+}

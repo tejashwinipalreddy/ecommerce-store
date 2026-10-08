@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Product Store</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <script>
+        if (!localStorage.getItem("loggedInUser")) {
+            window.location.href = "login.html";
+        }
+    </script>
+
+    <h1>E-Commerce Product Store</h1>
+
+    <h2>Add Product</h2>
+
+    <input id="name" placeholder="Product Name">
+    <input id="price" type="number" placeholder="Price">
+    <input id="category" placeholder="Category">
+    <input id="quantity" type="number" placeholder="Quantity">
+    <input id="imageUrl" placeholder="Image URL">
+
+    <button onclick="addProduct()">Add Product</button>
+
+    <hr>
+
+    <h2>Products</h2>
+
+    <input
+        id="search"
+        placeholder="Search products..."
+        oninput="filterProducts()"
+    >
+
+    <select id="categoryFilter" onchange="filterProducts()">
+        <option value="">All Categories</option>
+    </select>
+
+    <div id="products"></div>
+
+    <hr>
+
+    <h2>🛒 My Shopping Cart</h2>
+
+    <p>Items in Cart: <strong id="cartCount">0</strong></p>
+
+    <div id="cartItems"></div>
+
+    <h3>Total Amount: <span id="cartTotal">₹0.00</span></h3>
+
+    <button onclick="goToPayment()">
+        Proceed to Payment 💳
+    </button>
+
+    <script src="app.js"></script>
+
+    <script>
+        function displayCart() {
+            const cartItemsDiv = document.getElementById("cartItems");
+            const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+            cartItemsDiv.innerHTML = "";
+
+            if (cart.length === 0) {
+                cartItemsDiv.innerHTML = "<p>Your cart is empty.</p>";
+                document.getElementById("cartCount").textContent = "0";
+                document.getElementById("cartTotal").textContent = "₹0.00";
+                return;
+            }
+
+            let total = 0;
+            let count = 0;
+
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.cartQuantity;
+
+                total += subtotal;
+                count += item.cartQuantity;
+
+                const div = document.createElement("div");
+
+                const name = document.createElement("h3");
+                name.textContent = item.name;
+
+                const price = document.createElement("p");
+                price.textContent = "Price: ₹" + item.price;
+
+                const quantity = document.createElement("p");
+                quantity.textContent = "Quantity: " + item.cartQuantity;
+
+                const subtotalText = document.createElement("p");
+                subtotalText.textContent = "Subtotal: ₹" + subtotal.toFixed(2);
+
+                const removeButton = document.createElement("button");
+                removeButton.textContent = "Remove";
+                removeButton.onclick = function () {
+                    removeCartItem(index);
+                };
+
+                div.appendChild(name);
+                div.appendChild(price);
+                div.appendChild(quantity);
+                div.appendChild(subtotalText);
+                div.appendChild(removeButton);
+
+                cartItemsDiv.appendChild(div);
+            });
+
+            document.getElementById("cartCount").textContent = count;
+            document.getElementById("cartTotal").textContent =
+                "₹" + total.toFixed(2);
+        }
+
+        function removeCartItem(index) {
+            const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+            cart.splice(index, 1);
+
+            localStorage.setItem("cart", JSON.stringify(cart));
+
+            displayCart();
+        }
+
+        function goToPayment() {
+            const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+            if (cart.length === 0) {
+                alert("Please add products to your cart first.");
+                return;
+            }
+
+            window.location.href = "payment.html";
+        }
+
+        displayCart();
+    </script>
+
+</body>
+</html>
