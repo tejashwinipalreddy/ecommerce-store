@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 25px;
+            font-family: Arial, sans-serif;
+            background: #fff4e5;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 30px;
+            background: white;
+            border: 2px solid #d6b36a;
+            border-radius: 18px;
+            box-shadow: 0 8px 25px #0002;
+        }
+
+        .success {
+            text-align: center;
+            color: #198754;
+        }
+
+        h1 {
+            color: #8b1e1e;
+            text-align: center;
+        }
+
+        .details {
+            padding: 15px;
+            margin: 15px 0;
+            background: #fffaf0;
+            border-radius: 10px;
+            overflow-wrap: anywhere;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 8px;
+            background: #8b1e1e;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #641414;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Order Confirmation</h1>
+
+        <h2 class="success">✅ Order Placed Successfully!</h2>
+
+        <p style="text-align:center">
+            Thank you for shopping with us!
+        </p>
+
+        <div class="details">
+            <p><strong>Order ID:</strong> <span id="orderId"></span></p>
+            <p><strong>Customer:</strong> <span id="customer"></span></p>
+            <p><strong>Mobile:</strong> <span id="phone"></span></p>
+            <p><strong>Delivery Address:</strong> <span id="address"></span></p>
+            <p><strong>Payment Method:</strong> <span id="payment"></span></p>
+            <p><strong>Order Date:</strong> <span id="date"></span></p>
+        </div>
+
+        <h2>🛍️ Your Products</h2>
+        <div id="items"></div>
+
+        <h2>Total Amount: <span id="total"></span></h2>
+
+        <button onclick="window.location.href='index.html'">
+            Continue Shopping
+        </button>
+    </div>
+
+    <script>
+        const order = JSON.parse(localStorage.getItem("lastOrder"));
+
+        if (!order) {
+            document.querySelector(".container").innerHTML = `
+                <h1>No Order Found</h1>
+                <p style="text-align:center">
+                    Please place an order first.
+                </p>
+                <button onclick="window.location.href='index.html'">
+                    Back to Store
+                </button>
+            `;
+        } else {
+            document.getElementById("orderId").textContent = order.orderId;
+            document.getElementById("customer").textContent = order.customerName;
+            document.getElementById("phone").textContent = order.phone;
+            document.getElementById("address").textContent = order.address;
+            document.getElementById("payment").textContent = order.paymentMethod;
+            document.getElementById("date").textContent = order.orderDate;
+            document.getElementById("total").textContent =
+                "₹" + Number(order.total).toFixed(2);
+
+            const itemsDiv = document.getElementById("items");
+
+            order.items.forEach(item => {
+                const p = document.createElement("p");
+                p.textContent =
+                    item.name + " × " + item.cartQuantity +
+                    " — ₹" +
+                    (item.price * item.cartQuantity).toFixed(2);
+
+                itemsDiv.appendChild(p);
+            });
+        }
+    </script>
+
+</body>
+</html>
