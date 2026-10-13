@@ -1,20 +1,48 @@
+// BACKEND API
+const API_URL = "https://ecommerce-store-hui4.onrender.com/api/products";
+
+// GLOBAL VARIABLES
 let allProducts = [];
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+// HELPER: HANDLE API ERRORS
+async function handleResponse(response) {
+    if (!response.ok) {
+        const message = await response.text();
+        throw new Error(
+            message || `Request failed: ${response.status}`
+        );
+    }
+
+    if (response.status === 204) {
+        return null;
+    }
+
+    const contentType = response.headers.get("content-type");
+
+    if (contentType && contentType.includes("application/json")) {
+        return await response.json();
+    }
+
+    return null;
+}
 
 // ADD PRODUCT
 async function addProduct() {
     const product = {
-        name: document.getElementById("name").value,
+        name: document.getElementById("name").value.trim(),
         price: Number(document.getElementById("price").value),
-        category: document.getElementById("category").value,
+        category: document.getElementById("category").value.trim(),
         quantity: Number(document.getElementById("quantity").value),
-        imageUrl: document.getElementById("imageUrl").value
+        imageUrl: document.getElementById("imageUrl").value.trim()
     };
 
     if (
         !product.name ||
+        !Number.isFinite(product.price) ||
         product.price <= 0 ||
         !product.category ||
+        !Number.isInteger(product.quantity) ||
         product.quantity <= 0 ||
         !product.imageUrl
     ) {
@@ -22,53 +50,75 @@ async function addProduct() {
         return;
     }
 
-    const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(product)
-    });
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(product)
+        });
 
-    if (!response.ok) {
-        alert("Failed to add product.");
-        return;
+        await handleResponse(response);
+
+        alert("Product added successfully!");
+
+        document.getElementById("name").value = "";
+        document.getElementById("price").value = "";
+        document.getElementById("category").value = "";
+        document.getElementById("quantity").value = "";
+        document.getElementById("imageUrl").value = "";
+
+        await loadProducts();
+    } catch (error) {
+        console.error("Add product error:", error);
+        alert(
+            "Failed to add product. Check that the backend is running " +
+            "and its API allows requests from this page."
+        );
     }
-
-    alert("Product added successfully!");
-
-    document.getElementById("name").value = "";
-    document.getElementById("price").value = "";
-    document.getElementById("category").value = "";
-    document.getElementById("quantity").value = "";
-    document.getElementById("imageUrl").value = "";
-
-    loadProducts();
 }
 
 // LOAD PRODUCTS
 async function loadProducts() {
-    const response = await fetch("/api/products");
+    try {
+        const response = await fetch(API_URL);
+        const data = await handleResponse(response);
 
-    if (!response.ok) {
-        alert("Failed to load products.");
-        return;
+        allProducts = Array.isArray(data) ? data : [];
+
+        updateCategoryFilter();
+        displayProducts(allProducts);
+    } catch (error) {
+        console.error("Load products error:", error);
+
+        const productsDiv = document.getElementById("products");
+
+        if (productsDiv) {
+            productsDiv.textContent =
+                "Unable to load products. Make sure the backend is running.";
+        }
     }
-
-    allProducts = await response.json();
-
-    updateCategoryFilter();
-    displayProducts(allProducts);
 }
 
 // CATEGORY FILTER
 function updateCategoryFilter() {
     const categoryFilter = document.getElementById("categoryFilter");
+
+    if (!categoryFilter) return;
+
     const currentCategory = categoryFilter.value;
 
     const categories = [
-        ...new Set(allProducts.map(product => product.category))
+        ...new Set(
+            allProducts
+                .map(product => product.category)
+                .filter(Boolean)
+        )
     ];
 
-    categoryFilter.innerHTML = '<option value="">All Categories</option>';
+    categoryFilter.innerHTML =
+        '<option value="">All Categories</option>';
 
     categories.forEach(category => {
         const option = document.createElement("option");
@@ -77,23 +127,31 @@ function updateCategoryFilter() {
         categoryFilter.appendChild(option);
     });
 
-    categoryFilter.value = currentCategory;
+    categoryFilter.value = categories.includes(currentCategory)
+        ? currentCategory
+        : "";
 }
 
 // SEARCH AND FILTER
 function filterProducts() {
-    const searchText =
-        document.getElementById("search").value.toLowerCase();
+    const searchElement = document.getElementById("search");
+    const categoryElement = document.getElementById("categoryFilter");
 
-    const selectedCategory =
-        document.getElementById("categoryFilter").value;
+    const searchText = searchElement
+        ? searchElement.value.toLowerCase().trim()
+        : "";
+
+    const selectedCategory = categoryElement
+        ? categoryElement.value
+        : "";
 
     const filteredProducts = allProducts.filter(product => {
-        const matchesSearch =
-            product.name.toLowerCase().includes(searchText);
+        const matchesSearch = (product.name || "")
+            .toLowerCase()
+            .includes(searchText);
 
         const matchesCategory =
-            selectedCategory === "" ||
+            !selectedCategory ||
             product.category === selectedCategory;
 
         return matchesSearch && matchesCategory;
@@ -105,53 +163,88 @@ function filterProducts() {
 // DISPLAY PRODUCTS
 function displayProducts(products) {
     const productsDiv = document.getElementById("products");
+
+    if (!productsDiv) return;
+
     productsDiv.innerHTML = "";
 
-    if (products.length === 0) {
-        productsDiv.innerHTML = "<p>No products found.</p>";
+    if (!products.length) {
+        productsDiv.textContent = "No products found.";
         return;
     }
 
     products.forEach(product => {
         const item = document.createElement("div");
+        item.className = "product-card";
 
-        item.innerHTML = `
-            <img
-                src="${product.imageUrl}"
-                alt="${product.name}"
-                onerror="this.onerror=null;this.src='https://placehold.co/500x350?text=No+Image'"
-            >
+        const image = document.createElement("img");
+        image.src = product.imageUrl || "";
+        image.alt = product.name || "Product";
+        image.onerror = function () {
+            this.onerror = null;
+            this.src =
+                "https://placehold.co/500x350?text=No+Image";
+        };
 
-            <h3></h3>
-            <p>Price: ₹${product.price}</p>
-            <p>Category: </p>
-            <p>Available Stock: ${product.quantity}</p>
+        const name = document.createElement("h3");
+        name.textContent = product.name || "Unnamed product";
 
-            <label>Quantity:</label>
-            <input
-                type="number"
-                id="buyQty-${product.id}"
-                value="1"
-                min="1"
-                max="${product.quantity}"
-            >
+        const price = document.createElement("p");
+        price.textContent =
+            "Price: ₹" + Number(product.price || 0).toFixed(2);
 
-            <button onclick="addToCart(${product.id})">
-                🛒 Add to Cart
-            </button>
+        const category = document.createElement("p");
+        category.textContent =
+            "Category: " + (product.category || "Uncategorized");
 
-            <button onclick="updateProduct(${product.id})">
-                Update
-            </button>
+        const stock = document.createElement("p");
+        stock.textContent =
+            "Available Stock: " + Number(product.quantity || 0);
 
-            <button onclick="deleteProduct(${product.id})">
-                Delete
-            </button>
-        `;
+        const quantityLabel = document.createElement("label");
+        quantityLabel.textContent = "Quantity: ";
 
-        item.querySelector("h3").textContent = product.name;
-        item.querySelectorAll("p")[1].textContent =
-            "Category: " + product.category;
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "number";
+        quantityInput.id = "buyQty-" + product.id;
+        quantityInput.value = "1";
+        quantityInput.min = "1";
+        quantityInput.max = String(
+            Math.max(1, Number(product.quantity || 0))
+        );
+
+        const addButton = document.createElement("button");
+        addButton.textContent = "🛒 Add to Cart";
+        addButton.disabled = Number(product.quantity || 0) < 1;
+        addButton.addEventListener("click", function () {
+            addToCart(product.id);
+        });
+
+        const updateButton = document.createElement("button");
+        updateButton.textContent = "Update";
+        updateButton.addEventListener("click", function () {
+            updateProduct(product.id);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", function () {
+            deleteProduct(product.id);
+        });
+
+        item.append(
+            image,
+            name,
+            price,
+            category,
+            stock,
+            quantityLabel,
+            quantityInput,
+            document.createElement("br"),
+            addButton,
+            updateButton,
+            deleteButton
+        );
 
         productsDiv.appendChild(item);
     });
@@ -159,29 +252,42 @@ function displayProducts(products) {
 
 // ADD TO CART
 function addToCart(productId) {
-    const product = allProducts.find(p => p.id === productId);
+    const product = allProducts.find(
+        item => String(item.id) === String(productId)
+    );
 
     if (!product) {
         alert("Product not found.");
         return;
     }
 
-    const quantityInput = document.getElementById("buyQty-" + productId);
-    const quantity = Number(quantityInput.value);
+    const quantityInput =
+        document.getElementById("buyQty-" + productId);
+
+    const quantity = quantityInput
+        ? Number(quantityInput.value)
+        : 0;
+
+    const stock = Number(product.quantity || 0);
 
     if (
         !Number.isInteger(quantity) ||
         quantity < 1 ||
-        quantity > product.quantity
+        quantity > stock
     ) {
         alert("Please select a valid quantity within available stock.");
         return;
     }
 
-    const existingItem = cart.find(item => item.id === productId);
-    const currentCartQuantity = existingItem ? existingItem.cartQuantity : 0;
+    const existingItem = cart.find(
+        item => String(item.id) === String(productId)
+    );
 
-    if (currentCartQuantity + quantity > product.quantity) {
+    const currentQuantity = existingItem
+        ? Number(existingItem.cartQuantity)
+        : 0;
+
+    if (currentQuantity + quantity > stock) {
         alert("You cannot add more than the available stock.");
         return;
     }
@@ -192,7 +298,7 @@ function addToCart(productId) {
         cart.push({
             id: product.id,
             name: product.name,
-            price: product.price,
+            price: Number(product.price),
             imageUrl: product.imageUrl,
             cartQuantity: quantity
         });
@@ -207,12 +313,15 @@ function addToCart(productId) {
 // CART SUMMARY
 function updateCartSummary() {
     const cartCount = cart.reduce(
-        (total, item) => total + item.cartQuantity,
+        (total, item) => total + Number(item.cartQuantity || 0),
         0
     );
 
     const cartTotal = cart.reduce(
-        (total, item) => total + item.price * item.cartQuantity,
+        (total, item) =>
+            total +
+            Number(item.price || 0) *
+            Number(item.cartQuantity || 0),
         0
     );
 
@@ -234,14 +343,29 @@ async function updateProduct(id) {
     if (name === null || !name.trim()) return;
 
     const price = prompt("Enter new price:");
-    if (price === null || Number(price) <= 0) return;
+    if (
+        price === null ||
+        price.trim() === "" ||
+        !Number.isFinite(Number(price)) ||
+        Number(price) <= 0
+    ) {
+        alert("Please enter a valid price.");
+        return;
+    }
 
     const category = prompt("Enter new category:");
     if (category === null || !category.trim()) return;
 
     const quantity = prompt("Enter new stock quantity:");
-    if (quantity === null || !Number.isInteger(Number(quantity)) ||
-        Number(quantity) < 0) return;
+    if (
+        quantity === null ||
+        quantity.trim() === "" ||
+        !Number.isInteger(Number(quantity)) ||
+        Number(quantity) < 0
+    ) {
+        alert("Please enter a valid stock quantity.");
+        return;
+    }
 
     const imageUrl = prompt("Enter new image URL:");
     if (imageUrl === null || !imageUrl.trim()) return;
@@ -254,19 +378,23 @@ async function updateProduct(id) {
         imageUrl: imageUrl.trim()
     };
 
-    const response = await fetch("/api/products/" + id, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(product)
-    });
+    try {
+        const response = await fetch(API_URL + "/" + id, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(product)
+        });
 
-    if (!response.ok) {
-        alert("Failed to update product.");
-        return;
+        await handleResponse(response);
+
+        alert("Product updated successfully!");
+        await loadProducts();
+    } catch (error) {
+        console.error("Update product error:", error);
+        alert("Failed to update product. Check the backend API.");
     }
-
-    alert("Product updated successfully!");
-    loadProducts();
 }
 
 // DELETE PRODUCT
@@ -275,19 +403,31 @@ async function deleteProduct(id) {
         return;
     }
 
-    const response = await fetch("/api/products/" + id, {
-        method: "DELETE"
-    });
+    try {
+        const response = await fetch(API_URL + "/" + id, {
+            method: "DELETE"
+        });
 
-    if (!response.ok) {
-        alert("Failed to delete product.");
-        return;
+        await handleResponse(response);
+
+        cart = cart.filter(
+            item => String(item.id) !== String(id)
+        );
+
+        localStorage.setItem("cart", JSON.stringify(cart));
+
+        alert("Product deleted successfully!");
+
+        await loadProducts();
+        updateCartSummary();
+    } catch (error) {
+        console.error("Delete product error:", error);
+        alert("Failed to delete product. Check the backend API.");
     }
-
-    alert("Product deleted successfully!");
-    loadProducts();
 }
 
 // INITIALIZE
-loadProducts();
-updateCartSummary();
+document.addEventListener("DOMContentLoaded", function () {
+    updateCartSummary();
+    loadProducts();
+});
