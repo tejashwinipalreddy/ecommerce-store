@@ -10,12 +10,6 @@
 
 <body>
 
-    <script>
-        if (!localStorage.getItem("loggedInUser")) {
-            window.location.href = "login.html";
-        }
-    </script>
-
     <h1>E-Commerce Product Store</h1>
 
     <h2>Add Product</h2>
@@ -95,10 +89,12 @@
                 quantity.textContent = "Quantity: " + item.cartQuantity;
 
                 const subtotalText = document.createElement("p");
-                subtotalText.textContent = "Subtotal: ₹" + subtotal.toFixed(2);
+                subtotalText.textContent =
+                    "Subtotal: ₹" + subtotal.toFixed(2);
 
                 const removeButton = document.createElement("button");
                 removeButton.textContent = "Remove";
+
                 removeButton.onclick = function () {
                     removeCartItem(index);
                 };
