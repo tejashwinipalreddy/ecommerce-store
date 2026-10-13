@@ -19,7 +19,7 @@ async function registerUser() {
 
     try {
 
-        const response = await fetch("/api/users/register", {
+        const response = await fetch("https://ecommerce-store-hui4.onrender.com/api/users/register", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
